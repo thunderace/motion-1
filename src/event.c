@@ -518,35 +518,20 @@ static void event_image_snapshot(struct context *cnt, motion_event eventtype
     int passthrough;
 
     (void)eventtype;
-    (void)filename;
+    // (void)filename;
     (void)eventdata;
 
     if (len >= 9) {
         offset = len - 8;
     }
-
-    if (mystrne(cnt->conf.snapshot_filename+offset, "lastsnap")) {
-        char linkpath[PATH_MAX];
-        const char *snappath;
-        /*
-         *  conf.snapshot_filename would normally be defined but if someone deleted it by control interface
-         *  it is better to revert to the default than fail
-         */
-        if (cnt->conf.snapshot_filename) {
-            snappath = cnt->conf.snapshot_filename;
-        } else {
-            snappath = DEF_SNAPPATH;
-        }
-
-        mystrftime(cnt, filepath, sizeof(filepath), snappath, tv1, NULL, 0);
-        snprintf(fname, PATH_MAX, "%.*s.%s"
-            , (int)(PATH_MAX-1-strlen(filepath)-strlen(imageext(cnt)))
-            , filepath, imageext(cnt));
-        snprintf(fullfilename, PATH_MAX, "%.*s/%.*s"
+    
+    if (filename != NULL && strlen(filename) > 0) {
+        snprintf(fullfilename, PATH_MAX, "%.*s/%.*s.%s"
             , (int)(PATH_MAX-1-strlen(fname))
             , cnt->conf.target_dir
             , (int)(PATH_MAX-1-strlen(cnt->conf.target_dir))
-            , fname);
+            , filename
+            , imageext(cnt));
 
         passthrough = util_check_passthrough(cnt);
         if ((cnt->imgs.size_high > 0) && (!passthrough)) {
@@ -554,43 +539,76 @@ static void event_image_snapshot(struct context *cnt, motion_event eventtype
         } else {
             put_picture(cnt, fullfilename, img_data->image_norm, FTYPE_IMAGE_SNAPSHOT);
         }
+
         event(cnt, EVENT_FILECREATE, NULL, fullfilename, (void *)FTYPE_IMAGE_SNAPSHOT, tv1);
-
-        /*
-         *  Update symbolic link *after* image has been written so that
-         *  the link always points to a valid file.
-         */
-        snprintf(linkpath, PATH_MAX, "%.*s/lastsnap.%s"
-            , (int)(PATH_MAX-strlen("/lastsnap.")-strlen(imageext(cnt)))
-            , cnt->conf.target_dir, imageext(cnt));
-
-        remove(linkpath);
-
-        if (symlink(fname, linkpath)) {
-            MOTION_LOG(ERR, TYPE_EVENTS, SHOW_ERRNO
-                ,_("Could not create symbolic link [%s]"), fname);
-            return;
-        }
     } else {
-        mystrftime(cnt, filepath, sizeof(filepath), cnt->conf.snapshot_filename, tv1, NULL, 0);
-        snprintf(fname, PATH_MAX, "%.*s.%s"
-            , (int)(PATH_MAX-1-strlen(imageext(cnt)))
-            , filepath, imageext(cnt));
-        snprintf(fullfilename, PATH_MAX, "%.*s/%.*s"
-            , (int)(PATH_MAX-1-strlen(fname))
-            , cnt->conf.target_dir
-            , (int)(PATH_MAX-1-strlen(cnt->conf.target_dir))
-            , fname);
-        remove(fullfilename);
-
-        passthrough = util_check_passthrough(cnt);
-        if ((cnt->imgs.size_high > 0) && (!passthrough)) {
-            put_picture(cnt, fullfilename, img_data->image_high, FTYPE_IMAGE_SNAPSHOT);
+        if (mystrne(cnt->conf.snapshot_filename+offset, "lastsnap")) {
+            char linkpath[PATH_MAX];
+            const char *snappath;
+            /*
+             *  conf.snapshot_filename would normally be defined but if someone deleted it by control interface
+             *  it is better to revert to the default than fail
+             */
+            if (cnt->conf.snapshot_filename) {
+                snappath = cnt->conf.snapshot_filename;
+            } else {
+                snappath = DEF_SNAPPATH;
+            }
+    
+            mystrftime(cnt, filepath, sizeof(filepath), snappath, tv1, NULL, 0);
+            snprintf(fname, PATH_MAX, "%.*s.%s"
+                , (int)(PATH_MAX-1-strlen(filepath)-strlen(imageext(cnt)))
+                , filepath, imageext(cnt));
+            snprintf(fullfilename, PATH_MAX, "%.*s/%.*s"
+                , (int)(PATH_MAX-1-strlen(fname))
+                , cnt->conf.target_dir
+                , (int)(PATH_MAX-1-strlen(cnt->conf.target_dir))
+                , fname);
+    
+            passthrough = util_check_passthrough(cnt);
+            if ((cnt->imgs.size_high > 0) && (!passthrough)) {
+                put_picture(cnt, fullfilename, img_data->image_high, FTYPE_IMAGE_SNAPSHOT);
+            } else {
+                put_picture(cnt, fullfilename, img_data->image_norm, FTYPE_IMAGE_SNAPSHOT);
+            }
+            event(cnt, EVENT_FILECREATE, NULL, fullfilename, (void *)FTYPE_IMAGE_SNAPSHOT, tv1);
+    
+            /*
+             *  Update symbolic link *after* image has been written so that
+             *  the link always points to a valid file.
+             */
+            snprintf(linkpath, PATH_MAX, "%.*s/lastsnap.%s"
+                , (int)(PATH_MAX-strlen("/lastsnap.")-strlen(imageext(cnt)))
+                , cnt->conf.target_dir, imageext(cnt));
+    
+            remove(linkpath);
+    
+            if (symlink(fname, linkpath)) {
+                MOTION_LOG(ERR, TYPE_EVENTS, SHOW_ERRNO
+                    ,_("Could not create symbolic link [%s]"), fname);
+                return;
+            }
         } else {
-            put_picture(cnt, fullfilename, img_data->image_norm, FTYPE_IMAGE_SNAPSHOT);
+            mystrftime(cnt, filepath, sizeof(filepath), cnt->conf.snapshot_filename, tv1, NULL, 0);
+            snprintf(fname, PATH_MAX, "%.*s.%s"
+                , (int)(PATH_MAX-1-strlen(imageext(cnt)))
+                , filepath, imageext(cnt));
+            snprintf(fullfilename, PATH_MAX, "%.*s/%.*s"
+                , (int)(PATH_MAX-1-strlen(fname))
+                , cnt->conf.target_dir
+                , (int)(PATH_MAX-1-strlen(cnt->conf.target_dir))
+                , fname);
+            remove(fullfilename);
+    
+            passthrough = util_check_passthrough(cnt);
+            if ((cnt->imgs.size_high > 0) && (!passthrough)) {
+                put_picture(cnt, fullfilename, img_data->image_high, FTYPE_IMAGE_SNAPSHOT);
+            } else {
+                put_picture(cnt, fullfilename, img_data->image_norm, FTYPE_IMAGE_SNAPSHOT);
+            }
+    
+            event(cnt, EVENT_FILECREATE, NULL, fullfilename, (void *)FTYPE_IMAGE_SNAPSHOT, tv1);
         }
-
-        event(cnt, EVENT_FILECREATE, NULL, fullfilename, (void *)FTYPE_IMAGE_SNAPSHOT, tv1);
     }
 
     cnt->snapshot = 0;

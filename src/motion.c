@@ -2536,7 +2536,7 @@ static void mlp_snapshot(struct context *cnt)
     if ((cnt->conf.snapshot_interval > 0 && cnt->shots == 0 &&
          cnt->time_current_frame % cnt->conf.snapshot_interval <= cnt->time_last_frame % cnt->conf.snapshot_interval) ||
          cnt->snapshot) {
-        event(cnt, EVENT_IMAGE_SNAPSHOT, cnt->current_image, NULL, NULL, &cnt->current_image->timestamp_tv);
+        event(cnt, EVENT_IMAGE_SNAPSHOT, cnt->current_image, cnt->snapshot_name, NULL, &cnt->current_image->timestamp_tv);
         cnt->snapshot = 0;
     }
 

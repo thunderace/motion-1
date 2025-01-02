@@ -541,14 +541,16 @@ static int webu_parseurl(struct webui_ctx *webui)
         snprintf(webui->uri_cmd2, parm_len,"%s", st_pos);
     }
 
-    if ((mystreq(webui->uri_cmd1,"config") ||
-         mystreq(webui->uri_cmd1,"track") ) &&
+    if ( (
+        mystreq(webui->uri_cmd1,"config") ||
+        mystreq(webui->uri_cmd1,"track") || 
+        mystreq(webui->uri_cmd1,"action")) && 
         (strlen(webui->uri_cmd2) > 0)) {
         webu_parseurl_parms(webui, st_pos);
     }
 
     MOTION_LOG(DBG, TYPE_STREAM, NO_ERRNO,
-       "camid: >%s< cmd1: >%s< cmd2: >%s< parm1:>%s< val1:>%s< parm2:>%s< val2:>%s<"
+       "camid: >%s< cmd1: >%s< cmd2: >%s< parm1:>%s< val1:>%s< parm2:>%s< val2:>%s<%d"
                ,webui->uri_camid
                ,webui->uri_cmd1, webui->uri_cmd2
                ,webui->uri_parm1, webui->uri_value1
@@ -594,6 +596,22 @@ void webu_process_action(struct webui_ctx *webui)
             }
         } else {
             webui->cnt->snapshot = 1;
+            MOTION_LOG(DBG, TYPE_STREAM, NO_ERRNO,
+               "camid: >%s< cmd1: >%s< cmd2: >%s< parm1:>%s< val1:>%s< parm2:>%s< val2:>%s<"
+                       ,webui->uri_camid
+                       ,webui->uri_cmd1, webui->uri_cmd2
+                       ,webui->uri_parm1, webui->uri_value1
+                       ,webui->uri_parm2, webui->uri_value2);
+            
+            if (strlen(webui->uri_parm1) > 0 && mystreq(webui->uri_parm1,"filename") && strlen(webui->uri_value1) > 0) {
+                MOTION_LOG(DBG, TYPE_STREAM, NO_ERRNO,
+                   "snapshot with filename in param : >%s"
+                           ,webui->uri_value1);
+
+                strcpy(webui->cnt->snapshot_name, webui->uri_value1);
+            } else {
+                webui->cnt->snapshot_name[0] = '\0';
+            }
         }
 
 

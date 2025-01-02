@@ -414,6 +414,7 @@ struct context {
 
     /* Commands to the motion thread */
     volatile unsigned int snapshot;    /* Make a snapshot */
+    char snapshot_name[PATH_MAX];      /* name for next snapshot if not empty */ 
     volatile unsigned int event_stop;  /* Boolean for whether to stop a event */
     volatile unsigned int event_user;  /* Boolean for whether to user triggered an event */
     volatile unsigned int finish;      /* End the thread */
